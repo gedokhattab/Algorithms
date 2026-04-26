@@ -42,13 +42,14 @@ namespace Problem
 
             Landmark gorge = landmarks[gorgeIdx];
 
-            // Precompute Euclidean distance from gorge for each landmark
-            double[] distFromGorge = new double[N];
+            // Precompute SQUARED distance from gorge for each landmark (O(N))
+            // Using squared distances avoids sqrt and keeps values as integers for radix sort
+            long[] distSq = new long[N];
             for (int i = 0; i < N; i++)
             {
-                double dx = landmarks[i].X - gorge.X;
-                double dy = landmarks[i].Y - gorge.Y;
-                distFromGorge[i] = Math.Sqrt(dx * dx + dy * dy);
+                long dx = landmarks[i].X - gorge.X;
+                long dy = landmarks[i].Y - gorge.Y;
+                distSq[i] = dx * dx + dy * dy;
             }
 
             // Map Id -> index
@@ -68,19 +69,16 @@ namespace Problem
                 int v = idToIndex[trail.Item2];
                 int w = trail.Item3;
 
-                // Only allow movement to the farther node
-                if (distFromGorge[v] > distFromGorge[u])
+                // Only allow movement to the farther node (compare squared distances)
+                if (distSq[v] > distSq[u])
                     adj[u].Add(new Tuple<int, int>(v, w));
-                else if (distFromGorge[u] > distFromGorge[v])
+                else if (distSq[u] > distSq[v])
                     adj[v].Add(new Tuple<int, int>(u, w));
                 // If equal distances, skip (ambiguous, can't satisfy "strictly farther")
             }
 
-            // DP on DAG ordered by distFromGorge (O(N) via sorting then relaxing)
-            // Sort landmark indices by their distance from gorge
-            int[] order = new int[N];
-            for (int i = 0; i < N; i++) order[i] = i;
-            Array.Sort(order, (a, b) => distFromGorge[a].CompareTo(distFromGorge[b]));
+            // O(N) Radix Sort on squared distances
+            int[] order = RadixSortIndicesByKey(distSq, N);
 
             // Shortest path DP
             int[] dp = new int[N];
@@ -107,6 +105,53 @@ namespace Problem
                     minDist = dp[i];
 
             return minDist == int.MaxValue ? -1 : minDist;
+        }
+
+        // O(N) Radix Sort - sorts indices 0..N-1 by their corresponding key values
+        private static int[] RadixSortIndicesByKey(long[] keys, int N)
+        {
+            int[] order = new int[N];
+            for (int i = 0; i < N; i++) order[i] = i;
+            
+            // Process 8 bits at a time (4 passes for 64-bit values)
+            int[] temp = new int[N];
+            int[] count = new int[256];
+            
+            for (int shift = 0; shift < 64; shift += 8)
+            {
+                // Reset counts
+                for (int i = 0; i < 256; i++) count[i] = 0;
+                
+                // Count occurrences
+                for (int i = 0; i < N; i++)
+                {
+                    int bucket = (int)((keys[order[i]] >> shift) & 0xFF);
+                    count[bucket]++;
+                }
+                
+                // Compute prefix sums (starting positions)
+                int sum = 0;
+                for (int i = 0; i < 256; i++)
+                {
+                    int c = count[i];
+                    count[i] = sum;
+                    sum += c;
+                }
+                
+                // Place elements in sorted order
+                for (int i = 0; i < N; i++)
+                {
+                    int bucket = (int)((keys[order[i]] >> shift) & 0xFF);
+                    temp[count[bucket]++] = order[i];
+                }
+                
+                // Swap arrays
+                int[] swap = order;
+                order = temp;
+                temp = swap;
+            }
+            
+            return order;
         }
         #endregion
     }

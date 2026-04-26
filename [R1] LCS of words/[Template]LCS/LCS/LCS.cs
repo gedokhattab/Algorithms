@@ -29,8 +29,11 @@ namespace _Template_LCS
             // Case-insensitive: normalize all words to lowercase
             string[] w1 = new string[s1length];
             string[] w2 = new string[s2length];
-            for (int i = 0; i < s1length; i++) w1[i] = s1[i].ToLower();
-            for (int j = 0; j < s2length; j++) w2[j] = s2[j].ToLower();
+
+            for (int i = 0; i < s1length; i++) 
+                w1[i] = s1[i].ToLower();
+            for (int j = 0; j < s2length; j++) 
+                w2[j] = s2[j].ToLower();
 
             // dp[i][j] = LCS length of first i words of s1 and first j words of s2
             int[,] dp = new int[s1length + 1, s2length + 1];
