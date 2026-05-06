@@ -27,20 +27,23 @@ namespace Problem
 
             var adjList = new Dictionary<string, List<(string neighbor, int length)>>();
             foreach (var vertex in vertices)
-                adjList[vertex.Key] = new List<(string, int)>();
+                adjList[vertex.Key] = new List<(string, int)>(); // Initialize adjacency list
 
-            foreach (var edge in edges)
+            foreach (var edge in edges) // Build directed graph
             {
-                string u = edge.Key.Key;
-                string v = edge.Key.Value;
+                string startPoint = edge.Key.Key;
+                string endPoint = edge.Key.Value;
                 int length = edge.Value;
 
-                if (vertices[u] > vertices[v])
-                    adjList[u].Add((v, length));
-                else if (vertices[v] > vertices[u])
-                    adjList[v].Add((u, length));
+                if (vertices[startPoint] > vertices[endPoint]) // Skiing downhill from u to v
+                    adjList[startPoint].Add((endPoint, length));
+                else if (vertices[endPoint] > vertices[startPoint]) // Skiing downhill from v to u
+                    adjList[endPoint].Add((startPoint, length));
+                // Elevations are equal => skip
             }
 
+
+            // Topological sort using DFS
             var visited = new HashSet<string>();
             var topoOrder = new Stack<string>();
 
@@ -57,6 +60,8 @@ namespace Problem
                 if (!visited.Contains(vertex.Key))
                     DFS(vertex.Key);
 
+
+            // Compute shortest paths in topological order
             var shortestDistance = new Dictionary<string, int>();
             foreach (var vertex in vertices)
                 shortestDistance[vertex.Key] = int.MaxValue;
@@ -64,7 +69,8 @@ namespace Problem
 
             foreach (string u in topoOrder)
             {
-                if (shortestDistance[u] == int.MaxValue) continue;
+                if (shortestDistance[u] == int.MaxValue)
+                    continue;
 
                 foreach (var (neighbor, length) in adjList[u])
                 {
